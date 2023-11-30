@@ -1,14 +1,13 @@
 let config = {
   type: Phaser.AUTO,
-  width: 1200,
+  default: "arcade",
+  arcade: {
+    gravity: { y: 0 },
+    debug: true,
+  },
+  width: 800,
   height: 600,
-  scene: [Menu, Play],
+  scene: [Play],
 };
 
 let game = new Phaser.Game(config);
-
-let borderUISize = game.config.height / 15;
-let borderPadding = borderUISize / 3;
-
-// reserve keyboard vars
-let keyF, keyR, keyLEFT, keyRIGHT, keyUP;
