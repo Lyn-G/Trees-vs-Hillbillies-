@@ -1,12 +1,14 @@
-let config = {
+const config = {
   type: Phaser.AUTO,
-  default: "arcade",
-  arcade: {
-    gravity: { y: 0 },
-    debug: true,
-  },
   width: 800,
   height: 600,
+  physics: {
+    default: "arcade",
+    arcade: {
+      gravity: { y: 0 },
+      debug: false,
+    },
+  },
   scene: [Play],
 };
 

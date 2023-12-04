@@ -7,11 +7,32 @@ class Play extends Phaser.Scene {
     this.load.image("billyIdle", "../assets/billy-idle.png");
     this.load.image("billyFlamethrower", "../assets/billy-flamethrower.png");
     this.load.image("tree", "../assets/tree.png");
+    this.load.image("projectile", "../assets/projectile.png");
   }
 
   create() {
     this.billy = this.add.sprite(100, 300, "billyIdle");
     this.tree = this.add.sprite(600, 220, "tree");
+    this.physics.world.enable([this.billy, this.tree]);
+
+    this.projectiles = this.physics.add.group(); // Create a group for projectiles
+    this.projectileSpeed = 300; // Speed of the projectile
+
+    this.billyMaxHealth = 100;
+    this.billyCurrentHealth = this.billyMaxHealth;
+    this.billyHPInitialWidth = 200;
+
+    this.treeMaxHealth = 100;
+    this.treeCurrentHealth = this.treeMaxHealth;
+    this.treeHPInitialWidth = 200;
+
+    this.billyHP = this.add.graphics();
+    this.billyHP.fillStyle(0x24d330, 1);
+    this.billyHP.fillRect(50, 400, this.billyHPInitialWidth, 20);
+
+    this.treeHP = this.add.graphics();
+    this.treeHP.fillStyle(0x24d330, 1);
+    this.treeHP.fillRect(550, 400, this.treeHPInitialWidth, 20);
 
     this.cursors = this.input.keyboard.createCursorKeys();
     this.keys = this.input.keyboard.addKeys({
@@ -19,21 +40,27 @@ class Play extends Phaser.Scene {
       right: Phaser.Input.Keyboard.KeyCodes.D,
       space: Phaser.Input.Keyboard.KeyCodes.SPACE,
     });
+    this.shiftKey = this.input.keyboard.addKey(
+      Phaser.Input.Keyboard.KeyCodes.SHIFT
+    );
 
-    this.canUseFlamethrower = true; // Flag to control flamethrower usage
+    this.canUseFlamethrower = true;
 
     // Create a stationary cooldown timer bar
     this.cooldownBar = this.add.graphics();
-    this.cooldownBarInitialX = 50; // Initial x position
-    this.cooldownBarInitialWidth = 200; // Initial width
-    this.cooldownBar.fillStyle(0xff0000, 1); // Red color
+    this.cooldownBarInitialX = 50;
+    this.cooldownBarInitialWidth = 200;
+    this.cooldownBar.fillStyle(0xff0000, 1);
     this.cooldownBar.fillRect(
       this.cooldownBarInitialX,
       50,
       this.cooldownBarInitialWidth,
       20
-    ); // Position and size
-    this.cooldownBar.visible = false; // Initially invisible
+    );
+    this.cooldownBar.visible = false;
+
+    this.treeHPReduced = false;
+    this.billyHPReduced = false;
   }
 
   update() {
@@ -62,6 +89,21 @@ class Play extends Phaser.Scene {
         [],
         this
       );
+
+      this.physics.world.enable(this.tree);
+    }
+
+    if (this.billy.texture.key === "billyFlamethrower" && !this.treeHPReduced) {
+      this.physics.overlap(
+        this.tree,
+        this.billy,
+        () => {
+          this.reduceTreeHealth(10);
+          this.treeHPReduced = true;
+        },
+        null,
+        this
+      );
     }
 
     // Tree movement
@@ -70,13 +112,70 @@ class Play extends Phaser.Scene {
     } else if (this.cursors.right.isDown) {
       this.tree.x += 2;
     }
-  }
-  startCooldown() {
-    let totalTime = 2000; // Total time for cooldown
-    let updateTime = 100; // Time per update
-    let totalUpdates = totalTime / updateTime; // Total number of updates
 
-    this.cooldownBar.visible = true; // Show cooldown bar
+    if (Phaser.Input.Keyboard.JustDown(this.shiftKey)) {
+      this.spawnProjectile(this.tree.x, this.tree.y);
+    }
+
+    // Update projectiles
+    this.projectiles.getChildren().forEach((projectile) => {
+      this.physics.overlap(
+        projectile,
+        this.billy,
+        () => {
+          if (!this.billyHPReduced) {
+            this.reduceBillyHealth(10);
+            this.billyHPReduced = true;
+          }
+        },
+        null,
+        this
+      );
+
+      if (projectile.x > this.sys.game.config.width) {
+        projectile.destroy();
+      }
+    });
+  }
+
+  reduceBillyHealth(damage) {
+    this.billyCurrentHealth = Math.max(this.billyCurrentHealth - damage, 0);
+    const newWidth =
+      (this.billyHPInitialWidth * this.billyCurrentHealth) /
+      this.billyMaxHealth;
+
+    this.billyHP.clear();
+    this.billyHP.fillStyle(0x24d330, 1);
+    this.billyHP.fillRect(50, 400, newWidth, 20);
+    console.log("hit!");
+  }
+
+  spawnProjectile(x, y) {
+    this.billyHPReduced = false;
+    // Create a new projectile at the specified x and y coordinates
+    let projectile = this.projectiles.create(x, y, "projectile");
+    projectile.setScale(0.4);
+
+    // Set the velocity of the projectile to negative for leftward movement
+    projectile.setVelocityX(-this.projectileSpeed);
+  }
+
+  reduceTreeHealth(damage) {
+    this.treeCurrentHealth = Math.max(this.treeCurrentHealth - damage, 0);
+    const newWidth =
+      (this.treeHPInitialWidth * this.treeCurrentHealth) / this.treeMaxHealth;
+
+    this.treeHP.clear();
+    this.treeHP.fillStyle(0x24d330, 1);
+    this.treeHP.fillRect(550, 400, newWidth, 20);
+  }
+
+  startCooldown() {
+    let totalTime = 2000;
+    let updateTime = 100;
+    let totalUpdates = totalTime / updateTime;
+
+    this.cooldownBar.visible = true;
     this.cooldownBar.clear();
     this.cooldownBar.fillStyle(0xff0000, 1);
     this.cooldownBar.fillRect(
@@ -92,7 +191,7 @@ class Play extends Phaser.Scene {
       delay: updateTime,
       repeat: totalUpdates - 1,
       callback: () => {
-        let elapsed = this.time.now - startTime; // Calculate elapsed time
+        let elapsed = this.time.now - startTime;
         let newWidth = this.cooldownBarInitialWidth * (1 - elapsed / totalTime);
         this.cooldownBar.clear();
         this.cooldownBar.fillStyle(0xff0000, 1);
@@ -106,7 +205,8 @@ class Play extends Phaser.Scene {
       totalTime,
       () => {
         this.canUseFlamethrower = true;
-        this.cooldownBar.visible = false; // Hide cooldown bar
+        this.cooldownBar.visible = false;
+        this.treeHPReduced = false;
       },
       [],
       this
