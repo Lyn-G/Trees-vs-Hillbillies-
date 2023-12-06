@@ -5,8 +5,8 @@ class GameOver extends Phaser.Scene {
 
   preload() {}
 
-  create() {
-    const winner = this.data.get("winner");
+  create(data) {
+    const winner = data.winner;
     const gameOverText = this.add.text(
       250,
       250,

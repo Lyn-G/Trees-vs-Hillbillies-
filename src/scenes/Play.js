@@ -13,11 +13,11 @@ class Play extends Phaser.Scene {
   }
 
   create() {
-    this.billy = this.add.sprite(100, 300, "billyIdle");
+    this.billy = this.add.sprite(100, 100, "billyIdle");
     this.tree = this.add.sprite(600, 220, "tree");
     this.physics.world.enable([this.billy, this.tree]);
 
-    this.billy.body.setSize(70, 120);
+    this.billy.body.setSize(70, 80);
     this.tree.body.setSize(this.tree.width * 0.2, 250);
 
     this.projectiles = this.physics.add.group(); // Create a group for projectiles
@@ -93,6 +93,12 @@ class Play extends Phaser.Scene {
   }
 
   update() {
+    if (this.billyCurrentHealth <= 0 || this.treeCurrentHealth <= 0) {
+      let winner = this.billyCurrentHealth <= 0 ? "Tree" : "Billy";
+      this.scene.start("gameOver", { winner: winner });
+    }
+
+
     if (this.wKey.isDown && this.billyOnGround) {
       this.billy.body.setVelocityY(-250); // Adjust jump strength as needed
       this.billyOnGround = false;
@@ -128,14 +134,14 @@ class Play extends Phaser.Scene {
     ) {
       this.billy.setTexture("billyFlamethrower");
       this.canUseFlamethrower = false;
-      this.billy.body.setSize(600, 120);
+      this.billy.body.setSize(600, 80);
 
       // Timer to change back to the base form
       this.time.delayedCall(
         3000,
         () => {
           this.billy.setTexture("billyIdle");
-          this.billy.body.setSize(70, 120);
+          this.billy.body.setSize(70, 80);
           this.startCooldown();
         },
         [],
