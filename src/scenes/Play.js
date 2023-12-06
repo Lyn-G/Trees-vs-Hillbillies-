@@ -1,6 +1,8 @@
 class Play extends Phaser.Scene {
   constructor() {
     super("playScene");
+    this.billyOnGround = true;
+    this.treeOnGround = true;
   }
 
   preload() {
@@ -15,6 +17,9 @@ class Play extends Phaser.Scene {
     this.tree = this.add.sprite(600, 220, "tree");
     this.physics.world.enable([this.billy, this.tree]);
 
+    this.billy.body.setSize(70, 120);
+    this.tree.body.setSize(this.tree.width * 0.2, 250);
+
     this.projectiles = this.physics.add.group(); // Create a group for projectiles
     this.projectileSpeed = 300; // Speed of the projectile
 
@@ -28,11 +33,32 @@ class Play extends Phaser.Scene {
 
     this.billyHP = this.add.graphics();
     this.billyHP.fillStyle(0x24d330, 1);
-    this.billyHP.fillRect(50, 400, this.billyHPInitialWidth, 20);
+    this.billyHP.fillRect(50, 100, this.billyHPInitialWidth, 20);
 
     this.treeHP = this.add.graphics();
     this.treeHP.fillStyle(0x24d330, 1);
-    this.treeHP.fillRect(550, 400, this.treeHPInitialWidth, 20);
+    this.treeHP.fillRect(550, 100, this.treeHPInitialWidth, 20);
+
+    //ground
+    this.ground = this.add.rectangle(
+      0,
+      this.sys.game.config.height - 200,
+      1600,
+      40,
+      0x654321
+    );
+    this.physics.add.existing(this.ground, true); // 'true' makes it a static object
+
+    // Enable physics for Billy and the Tree
+    this.physics.world.enable([this.billy, this.tree]);
+
+    // Set gravity for the objects
+    this.billy.body.setGravityY(300);
+    this.tree.body.setGravityY(300);
+
+    // Add collision between the ground and Billy and the tree
+    this.physics.add.collider(this.billy, this.ground);
+    this.physics.add.collider(this.tree, this.ground);
 
     this.cursors = this.input.keyboard.createCursorKeys();
     this.keys = this.input.keyboard.addKeys({
@@ -43,6 +69,9 @@ class Play extends Phaser.Scene {
     this.shiftKey = this.input.keyboard.addKey(
       Phaser.Input.Keyboard.KeyCodes.SHIFT
     );
+
+    // Add W key for Billy's jump
+    this.wKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
 
     this.canUseFlamethrower = true;
 
@@ -64,6 +93,27 @@ class Play extends Phaser.Scene {
   }
 
   update() {
+    if (this.wKey.isDown && this.billyOnGround) {
+      this.billy.body.setVelocityY(-250); // Adjust jump strength as needed
+      this.billyOnGround = false;
+    }
+
+    // Tree's jump
+    if (this.cursors.up.isDown && this.treeOnGround) {
+      this.tree.body.setVelocityY(-250); // Adjust jump strength as needed
+      this.treeOnGround = false;
+    }
+
+    // Check if Billy is on the ground
+    if (this.billy.body.touching.down) {
+      this.billyOnGround = true;
+    }
+
+    // Check if the tree is on the ground
+    if (this.tree.body.touching.down) {
+      this.treeOnGround = true;
+    }
+
     // Billy movement
     if (this.keys.left.isDown) {
       this.billy.x -= 2;
@@ -78,12 +128,14 @@ class Play extends Phaser.Scene {
     ) {
       this.billy.setTexture("billyFlamethrower");
       this.canUseFlamethrower = false;
+      this.billy.body.setSize(600, 120);
 
       // Timer to change back to the base form
       this.time.delayedCall(
         3000,
         () => {
           this.billy.setTexture("billyIdle");
+          this.billy.body.setSize(70, 120);
           this.startCooldown();
         },
         [],
@@ -93,17 +145,16 @@ class Play extends Phaser.Scene {
       this.physics.world.enable(this.tree);
     }
 
-    if (this.billy.texture.key === "billyFlamethrower" && !this.treeHPReduced) {
-      this.physics.overlap(
-        this.tree,
-        this.billy,
-        () => {
+    // collision check for billy's flamethrower and the tree
+    if (this.billy.texture.key === "billyFlamethrower") {
+      if (this.checkOverlap(this.billy, this.tree)) {
+        if (!this.treeHPReduced) {
           this.reduceTreeHealth(10);
           this.treeHPReduced = true;
-        },
-        null,
-        this
-      );
+        }
+      }
+    } else {
+      this.treeHPReduced = false;
     }
 
     // Tree movement
@@ -119,6 +170,7 @@ class Play extends Phaser.Scene {
 
     // Update projectiles
     this.projectiles.getChildren().forEach((projectile) => {
+      projectile.body.setSize(200, 200);
       this.physics.overlap(
         projectile,
         this.billy,
@@ -138,6 +190,13 @@ class Play extends Phaser.Scene {
     });
   }
 
+  checkOverlap(spriteA, spriteB) {
+    const boundsA = spriteA.getBounds();
+    const boundsB = spriteB.getBounds();
+
+    return Phaser.Geom.Intersects.RectangleToRectangle(boundsA, boundsB);
+  }
+
   reduceBillyHealth(damage) {
     this.billyCurrentHealth = Math.max(this.billyCurrentHealth - damage, 0);
     const newWidth =
@@ -146,8 +205,7 @@ class Play extends Phaser.Scene {
 
     this.billyHP.clear();
     this.billyHP.fillStyle(0x24d330, 1);
-    this.billyHP.fillRect(50, 400, newWidth, 20);
-    console.log("hit!");
+    this.billyHP.fillRect(50, 100, newWidth, 20);
   }
 
   spawnProjectile(x, y) {
@@ -167,7 +225,7 @@ class Play extends Phaser.Scene {
 
     this.treeHP.clear();
     this.treeHP.fillStyle(0x24d330, 1);
-    this.treeHP.fillRect(550, 400, newWidth, 20);
+    this.treeHP.fillRect(550, 100, newWidth, 20);
   }
 
   startCooldown() {
