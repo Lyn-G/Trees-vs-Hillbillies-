@@ -3,13 +3,15 @@ class Play extends Phaser.Scene {
     super("playScene");
     this.billyOnGround = true;
     this.treeOnGround = true;
+    this.flamethrowerBoosted = false;
   }
 
   preload() {
     this.load.image("billyIdle", "../assets/billy-idle.png");
     this.load.image("billyFlamethrower", "../assets/billy-flamethrower.png");
     this.load.image("tree", "../assets/tree.png");
-    this.load.image("projectile", "../assets/projectile.png");
+    this.load.image("projectile", "../assets/projectile.png"); 
+    this.load.image("pill2", "../assets/pill2.png");
   }
 
   create() {
@@ -90,6 +92,26 @@ class Play extends Phaser.Scene {
 
     this.treeHPReduced = false;
     this.billyHPReduced = false;
+
+      //new code
+    this.pills = this.physics.add.group();
+
+    this.time.delayedCall(Phaser.Math.Between(5000, 7000), this.spawnPill, [], this);
+
+    // Timer event to schedule subsequent pill spawns
+    this.time.addEvent({
+        delay: 7000,
+        loop: true,
+        callback: () => {
+            this.time.delayedCall(Phaser.Math.Between(2000, 6000), this.spawnPill, [], this);
+        }
+    });
+
+
+  
+
+    this.physics.add.overlap(this.billy, this.pills, this.collectPill, null, this);
+
   }
 
   update() {
@@ -151,17 +173,23 @@ class Play extends Phaser.Scene {
       this.physics.world.enable(this.tree);
     }
 
+
+
     // collision check for billy's flamethrower and the tree
     if (this.billy.texture.key === "billyFlamethrower") {
-      if (this.checkOverlap(this.billy, this.tree)) {
+    if (this.checkOverlap(this.billy, this.tree)) {
         if (!this.treeHPReduced) {
-          this.reduceTreeHealth(10);
-          this.treeHPReduced = true;
+            let damage = this.flamethrowerBoosted ? 68 : 34; // Double damage if boosted
+            this.reduceTreeHealth(damage);
+            this.treeHPReduced = true;
         }
-      }
-    } else {
-      this.treeHPReduced = false;
     }
+} else {
+    this.treeHPReduced = false;
+}
+
+
+
 
     // Tree movement
     if (this.cursors.left.isDown) {
@@ -182,7 +210,7 @@ class Play extends Phaser.Scene {
         this.billy,
         () => {
           if (!this.billyHPReduced) {
-            this.reduceBillyHealth(10);
+            this.reduceBillyHealth(1.5);
             this.billyHPReduced = true;
           }
         },
@@ -216,13 +244,26 @@ class Play extends Phaser.Scene {
 
   spawnProjectile(x, y) {
     this.billyHPReduced = false;
-    // Create a new projectile at the specified x and y coordinates
-    let projectile = this.projectiles.create(x, y, "projectile");
+  
+    // Further lower the spawn position of the projectile
+    let spawnY = y + 100; // Increase this value to spawn the projectile even lower
+  
+    // Create a new projectile at the specified x and adjusted y coordinates
+    let projectile = this.projectiles.create(x, spawnY, "projectile");
     projectile.setScale(0.4);
-
-    // Set the velocity of the projectile to negative for leftward movement
+  
+    // Make the hitbox of the projectile even smaller
+    let hitboxWidth = 25;  // Decrease these dimensions for a smaller hitbox
+    let hitboxHeight = 25;
+    projectile.body.setSize(hitboxWidth, hitboxHeight);
+  
+    // Set the velocity of the projectile
     projectile.setVelocityX(-this.projectileSpeed);
   }
+  
+  
+  
+  
 
   reduceTreeHealth(damage) {
     this.treeCurrentHealth = Math.max(this.treeCurrentHealth - damage, 0);
@@ -276,4 +317,34 @@ class Play extends Phaser.Scene {
       this
     );
   }
+
+
+
+  //new code
+  spawnPill() {
+    let x = Phaser.Math.Between(0, this.sys.game.config.width / 2);
+    let pill = this.pills.create(x, 0, "pill2");
+    pill.setVelocityY(100); // Adjust as needed
+
+    let hitboxSize = 20; // Adjust this size to your preference
+    pill.body.setSize(hitboxSize, hitboxSize);
+    let offset = (pill.width - hitboxSize) / 2;
+    pill.body.setOffset(offset, offset);
+}
+
+
+
+
+  collectPill(billy, pill) {
+      pill.destroy();
+      this.boostFlamethrower();
+  }
+  boostFlamethrower() {
+    this.flamethrowerBoosted = true;
+    this.time.delayedCall(10000, () => {  // Duration of the boost
+        this.flamethrowerBoosted = false;
+    }, [], this);
+  }
+
+
 }
