@@ -21,7 +21,8 @@ class Play extends Phaser.Scene {
     this.billy = this.add.sprite(100, 100, "billyIdle");
     this.tree = this.add.sprite(600, 220, "tree");
 
-    this.physics.world.enable([this.billy, this.tree]);
+    this.physics.world.enable(this.billy);
+    this.physics.world.enable(this.tree);
 
     this.billy.body.setSize(70, 80);
     this.tree.body.setSize(this.tree.width * 0.2, 250);
@@ -72,8 +73,8 @@ class Play extends Phaser.Scene {
       right: Phaser.Input.Keyboard.KeyCodes.D,
       space: Phaser.Input.Keyboard.KeyCodes.SPACE,
     });
-    this.shiftKey = this.input.keyboard.addKey(
-      Phaser.Input.Keyboard.KeyCodes.SHIFT
+    this.ctrlKey = this.input.keyboard.addKey(
+      Phaser.Input.Keyboard.KeyCodes.CTRL
     );
 
     // Add W key for Billy's jump
@@ -173,6 +174,20 @@ class Play extends Phaser.Scene {
       this.canUseFlamethrower = false;
       this.billy.body.setSize(600, 80);
 
+      // collision check for billy's flamethrower and the tree
+      if (this.billy.texture.key == "billyFlamethrower") {
+        if (this.checkOverlap(this.billy, this.tree)) {
+          console.log("overlap");
+          if (!this.treeHPReduced) {
+            let damage = this.flamethrowerBoosted ? 68 : 34; // Double damage if boosted
+            this.reduceTreeHealth(damage);
+            this.treeHPReduced = true;
+          }
+        }
+      } else {
+        this.treeHPReduced = false;
+      }
+
       // Timer to change back to the base form
       this.time.delayedCall(
         3000,
@@ -185,20 +200,8 @@ class Play extends Phaser.Scene {
         this
       );
 
+      this.physics.world.enable(this.billy);
       this.physics.world.enable(this.tree);
-    }
-
-    // collision check for billy's flamethrower and the tree
-    if (this.billy.texture.key === "billyFlamethrower") {
-      if (this.checkOverlap(this.billy, this.tree)) {
-        if (!this.treeHPReduced) {
-          let damage = this.flamethrowerBoosted ? 68 : 34; // Double damage if boosted
-          this.reduceTreeHealth(damage);
-          this.treeHPReduced = true;
-        }
-      }
-    } else {
-      this.treeHPReduced = false;
     }
 
     // Tree movement
@@ -208,7 +211,7 @@ class Play extends Phaser.Scene {
       this.tree.x += 2;
     }
 
-    if (Phaser.Input.Keyboard.JustDown(this.shiftKey)) {
+    if (Phaser.Input.Keyboard.JustDown(this.ctrlKey)) {
       this.spawnProjectile(this.tree.x, this.tree.y);
     }
 
@@ -220,7 +223,7 @@ class Play extends Phaser.Scene {
         this.billy,
         () => {
           if (!this.billyHPReduced) {
-            this.reduceBillyHealth(1.5);
+            this.reduceBillyHealth(3);
             this.billyHPReduced = true;
           }
         },
@@ -296,7 +299,7 @@ class Play extends Phaser.Scene {
       20
     );
 
-    let startTime = this.time.now; // Record the start time
+    let startTime = this.time.now;
 
     this.time.addEvent({
       delay: updateTime,
@@ -328,9 +331,9 @@ class Play extends Phaser.Scene {
   spawnPill() {
     let x = Phaser.Math.Between(0, this.sys.game.config.width / 2);
     let pill = this.pills.create(x, 0, "pill2");
-    pill.setVelocityY(100); // Adjust as needed
+    pill.setVelocityY(100);
 
-    let hitboxSize = 20; // Adjust this size to your preference
+    let hitboxSize = 20;
     pill.body.setSize(hitboxSize, hitboxSize);
     let offset = (pill.width - hitboxSize) / 2;
     pill.body.setOffset(offset, offset);
