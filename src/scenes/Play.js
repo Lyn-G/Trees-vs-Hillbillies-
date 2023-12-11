@@ -7,23 +7,19 @@ class Play extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image("billyIdle", "../assets/billy-idle.png");
-    this.load.image("billyFlamethrower", "../assets/billy-flamethrower.png");
-    this.load.image("tree", "../assets/tree.png");
-    this.load.image("projectile", "../assets/projectile.png"); 
-    this.load.image("pill2", "../assets/pill2.png");
-    this.load.image("background", "../assets/treeBackground.png");
+    this.load.image("billyIdle", "./assets/billy-idle.png");
+    this.load.image("billyFlamethrower", "./assets/billy-flamethrower.png");
+    this.load.image("tree", "./assets/tree.png");
+    this.load.image("projectile", "./assets/projectile.png");
+    this.load.image("pill2", "./assets/pill2.png");
+    this.load.image("background", "./assets/treeBackground.png");
   }
 
   create() {
-
-    this.add.image(0, 0, 'background').setOrigin(0, 0).setDepth(-1);
-
+    this.add.image(0, 0, "background").setOrigin(0, 0).setDepth(-1);
 
     this.billy = this.add.sprite(100, 100, "billyIdle");
     this.tree = this.add.sprite(600, 220, "tree");
-
-    
 
     this.physics.world.enable([this.billy, this.tree]);
 
@@ -101,25 +97,37 @@ class Play extends Phaser.Scene {
     this.treeHPReduced = false;
     this.billyHPReduced = false;
 
-      //new code
+    //new code
     this.pills = this.physics.add.group();
 
-    this.time.delayedCall(Phaser.Math.Between(5000, 7000), this.spawnPill, [], this);
+    this.time.delayedCall(
+      Phaser.Math.Between(5000, 7000),
+      this.spawnPill,
+      [],
+      this
+    );
 
     // Timer event to schedule subsequent pill spawns
     this.time.addEvent({
-        delay: 7000,
-        loop: true,
-        callback: () => {
-            this.time.delayedCall(Phaser.Math.Between(2000, 6000), this.spawnPill, [], this);
-        }
+      delay: 7000,
+      loop: true,
+      callback: () => {
+        this.time.delayedCall(
+          Phaser.Math.Between(2000, 6000),
+          this.spawnPill,
+          [],
+          this
+        );
+      },
     });
 
-
-  
-
-    this.physics.add.overlap(this.billy, this.pills, this.collectPill, null, this);
-
+    this.physics.add.overlap(
+      this.billy,
+      this.pills,
+      this.collectPill,
+      null,
+      this
+    );
   }
 
   update() {
@@ -127,7 +135,6 @@ class Play extends Phaser.Scene {
       let winner = this.billyCurrentHealth <= 0 ? "Tree" : "Billy";
       this.scene.start("gameOver", { winner: winner });
     }
-
 
     if (this.wKey.isDown && this.billyOnGround) {
       this.billy.body.setVelocityY(-250); // Adjust jump strength as needed
@@ -181,23 +188,18 @@ class Play extends Phaser.Scene {
       this.physics.world.enable(this.tree);
     }
 
-
-
     // collision check for billy's flamethrower and the tree
     if (this.billy.texture.key === "billyFlamethrower") {
-    if (this.checkOverlap(this.billy, this.tree)) {
+      if (this.checkOverlap(this.billy, this.tree)) {
         if (!this.treeHPReduced) {
-            let damage = this.flamethrowerBoosted ? 68 : 34; // Double damage if boosted
-            this.reduceTreeHealth(damage);
-            this.treeHPReduced = true;
+          let damage = this.flamethrowerBoosted ? 68 : 34; // Double damage if boosted
+          this.reduceTreeHealth(damage);
+          this.treeHPReduced = true;
         }
+      }
+    } else {
+      this.treeHPReduced = false;
     }
-} else {
-    this.treeHPReduced = false;
-}
-
-
-
 
     // Tree movement
     if (this.cursors.left.isDown) {
@@ -252,26 +254,22 @@ class Play extends Phaser.Scene {
 
   spawnProjectile(x, y) {
     this.billyHPReduced = false;
-  
+
     // Further lower the spawn position of the projectile
     let spawnY = y + 100; // Increase this value to spawn the projectile even lower
-  
+
     // Create a new projectile at the specified x and adjusted y coordinates
     let projectile = this.projectiles.create(x, spawnY, "projectile");
     projectile.setScale(0.4);
-  
+
     // Make the hitbox of the projectile even smaller
-    let hitboxWidth = 25;  // Decrease these dimensions for a smaller hitbox
+    let hitboxWidth = 25; // Decrease these dimensions for a smaller hitbox
     let hitboxHeight = 25;
     projectile.body.setSize(hitboxWidth, hitboxHeight);
-  
+
     // Set the velocity of the projectile
     projectile.setVelocityX(-this.projectileSpeed);
   }
-  
-  
-  
-  
 
   reduceTreeHealth(damage) {
     this.treeCurrentHealth = Math.max(this.treeCurrentHealth - damage, 0);
@@ -326,8 +324,6 @@ class Play extends Phaser.Scene {
     );
   }
 
-
-
   //new code
   spawnPill() {
     let x = Phaser.Math.Between(0, this.sys.game.config.width / 2);
@@ -338,21 +334,22 @@ class Play extends Phaser.Scene {
     pill.body.setSize(hitboxSize, hitboxSize);
     let offset = (pill.width - hitboxSize) / 2;
     pill.body.setOffset(offset, offset);
-}
-
-
-
+  }
 
   collectPill(billy, pill) {
-      pill.destroy();
-      this.boostFlamethrower();
+    pill.destroy();
+    this.boostFlamethrower();
   }
   boostFlamethrower() {
     this.flamethrowerBoosted = true;
-    this.time.delayedCall(10000, () => {  // Duration of the boost
+    this.time.delayedCall(
+      10000,
+      () => {
+        // Duration of the boost
         this.flamethrowerBoosted = false;
-    }, [], this);
+      },
+      [],
+      this
+    );
   }
-
-
 }

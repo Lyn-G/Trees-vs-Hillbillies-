@@ -16,6 +16,13 @@ class GameOver extends Phaser.Scene {
         fill: "#fff",
       }
     );
+
+    gameOverText.setInteractive({ useHandCursor: true });
+
+    // Listen for the pointerdown event
+    gameOverText.on("pointerdown", () => {
+      this.scene.start("playScene");
+    });
   }
 
   update() {}
