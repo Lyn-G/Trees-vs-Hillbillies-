@@ -12,11 +12,19 @@ class Play extends Phaser.Scene {
     this.load.image("tree", "../assets/tree.png");
     this.load.image("projectile", "../assets/projectile.png"); 
     this.load.image("pill2", "../assets/pill2.png");
+    this.load.image("background", "../assets/treeBackground.png");
   }
 
   create() {
+
+    this.add.image(0, 0, 'background').setOrigin(0, 0).setDepth(-1);
+
+
     this.billy = this.add.sprite(100, 100, "billyIdle");
     this.tree = this.add.sprite(600, 220, "tree");
+
+    
+
     this.physics.world.enable([this.billy, this.tree]);
 
     this.billy.body.setSize(70, 80);
