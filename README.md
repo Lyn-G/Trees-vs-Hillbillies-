@@ -12,4 +12,4 @@ The tree on the right is controlled with the left, up, right, and ctrl key.<br>
 left key - left movement<br>
 up key - jump movement<br>
 right key - right movement<br>
-ctrl key - shoot projectiles
+down key - shoot projectiles

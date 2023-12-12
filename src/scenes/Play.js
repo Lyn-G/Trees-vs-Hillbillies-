@@ -73,8 +73,8 @@ class Play extends Phaser.Scene {
       right: Phaser.Input.Keyboard.KeyCodes.D,
       space: Phaser.Input.Keyboard.KeyCodes.SPACE,
     });
-    this.ctrlKey = this.input.keyboard.addKey(
-      Phaser.Input.Keyboard.KeyCodes.CTRL
+    this.downKey = this.input.keyboard.addKey(
+      Phaser.Input.Keyboard.KeyCodes.DOWN
     );
 
     // Add W key for Billy's jump
@@ -211,7 +211,7 @@ class Play extends Phaser.Scene {
       this.tree.x += 2;
     }
 
-    if (Phaser.Input.Keyboard.JustDown(this.ctrlKey)) {
+    if (Phaser.Input.Keyboard.JustDown(this.downKey)) {
       this.spawnProjectile(this.tree.x, this.tree.y);
     }
 
